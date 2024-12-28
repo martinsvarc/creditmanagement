@@ -1,10 +1,14 @@
-import { Checkbox } from "@/components/ui/checkbox";
+import React from 'react';
 
-const CheckboxExample = () => (
-  <label>
-    <Checkbox />
-    <span>Check me</span>
-  </label>
-);
+const Checkbox = ({ checked, onCheckedChange, className }) => {
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+      className={className}
+    />
+  );
+};
 
-export default CheckboxExample;
+export default Checkbox;
