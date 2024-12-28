@@ -161,6 +161,10 @@ export function CreditManagement() {
   const [bulkCreditAmount, setBulkCreditAmount] = useState('')
   const [copyFeedback, setCopyFeedback] = useState('')
 
+  const handleSelectAllChange = (checked: CheckedState) => {
+    setSelectAll(!!checked)  // Convert CheckedState to boolean
+  }
+
   useEffect(() => {
     if (selectAll) {
       const allChecked = users.reduce((acc, user) => ({ ...acc, [user.id]: true }), {})
@@ -358,7 +362,7 @@ export function CreditManagement() {
                 <div className="flex items-center gap-4 min-h-[32px]">
                   <Checkbox 
                     checked={selectAll}
-                    onCheckedChange={setSelectAll}
+                    onCheckedChange={handleSelectAllChange}
                     className="data-[state=checked]:bg-[#5b06be] data-[state=checked]:border-[#5b06be]"
                   />
                   <span className="font-medium">Select All Users</span>
