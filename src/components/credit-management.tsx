@@ -40,10 +40,12 @@ interface User {
   credits: number
   monthly_credits: number
   needs_monthly_credits?: boolean
+  monthly_credit_manager_id?: string
 }
 
 interface UserRowProps {
   user: User
+  currentUserId: string
   onAddCredits: (memberId: string, amount: number) => void
   onRemoveCredits: (memberId: string, amount: number) => void
   checked: boolean
@@ -54,6 +56,7 @@ interface UserRowProps {
 
 const UserRow: React.FC<UserRowProps> = ({ 
   user, 
+  currentUserId,
   onAddCredits, 
   onRemoveCredits, 
   checked, 
@@ -63,6 +66,9 @@ const UserRow: React.FC<UserRowProps> = ({
 }) => {
   const [creditAmount, setCreditAmount] = useState<string>('')
   const [automationAmount, setAutomationAmount] = useState<string>('')
+  const [isEditingAutomation, setIsEditingAutomation] = useState(false)
+
+  const isOwnAutomation = user.monthly_credit_manager_id === currentUserId
 
   return (
     <tr className="h-12 hover:bg-gray-50 border-b border-gray-200 last:border-b-0">
@@ -85,15 +91,31 @@ const UserRow: React.FC<UserRowProps> = ({
       <td className="py-4 px-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
-            {user.monthly_credits ? (
+            {user.monthly_credits > 0 && !isEditingAutomation ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">{user.monthly_credits} credits/month</span>
-                <Button
-                  onClick={() => onSaveAutomation(user.member_id, '')}
-                  className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm"
-                >
-                  Edit
-                </Button>
+                <span className="text-sm font-medium">
+                  {user.monthly_credits} credits/month
+                  {!isOwnAutomation && ' (Set by another user)'}
+                </span>
+                {isOwnAutomation && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setAutomationAmount(user.monthly_credits.toString())
+                        setIsEditingAutomation(true)
+                      }}
+                      className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => onSaveAutomation(user.member_id, '0')}
+                      className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <>
@@ -106,18 +128,32 @@ const UserRow: React.FC<UserRowProps> = ({
                   placeholder="Amount"
                   className="h-9 border text-sm w-24"
                 />
-                <Button
-                  onClick={() => {
-                    if (automationAmount) {
-                      onSaveAutomation(user.member_id, automationAmount)
-                      setAutomationAmount('')
-                    }
-                  }}
-                  disabled={!automationAmount}
-                  className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm whitespace-nowrap"
-                >
-                  Save Automation
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      if (automationAmount) {
+                        onSaveAutomation(user.member_id, automationAmount)
+                        setAutomationAmount('')
+                        setIsEditingAutomation(false)
+                      }
+                    }}
+                    disabled={!automationAmount}
+                    className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm whitespace-nowrap"
+                  >
+                    {isEditingAutomation ? 'Update Automation' : 'Save Automation'}
+                  </Button>
+                  {isEditingAutomation && (
+                    <Button
+                      onClick={() => {
+                        setAutomationAmount('')
+                        setIsEditingAutomation(false)
+                      }}
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm"
+                    >
+                      Cancel Edit
+                    </Button>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -176,7 +212,7 @@ const UserRow: React.FC<UserRowProps> = ({
 
 export function CreditManagement() {
   const [users, setUsers] = useState<User[]>([])
-  const [managerCredits, setManagerCredits] = useState<number>(1000)
+  const [currentUserCredits, setCurrentUserCredits] = useState<number>(0)
   const [checkedUsers, setCheckedUsers] = useState<{ [key: string]: boolean }>({})
   const [selectAll, setSelectAll] = useState(false)
   const [bulkAutomationAmount, setBulkAutomationAmount] = useState('')
@@ -184,18 +220,20 @@ export function CreditManagement() {
   const [copyFeedback, setCopyFeedback] = useState('')
   const [loading, setLoading] = useState(true)
 
-  // Get teamId from URL
+  // Get IDs from URL
+  const memberId = typeof window !== 'undefined' ? 
+    new URLSearchParams(window.location.search).get('mid') || '' : '';
   const teamId = typeof window !== 'undefined' ? 
     new URLSearchParams(window.location.search).get('tid') || '' : '';
 
   useEffect(() => {
-    if (teamId) {
+    if (teamId && memberId) {
       fetchUsers()
-      // Set up interval to check for monthly credits
-      const interval = setInterval(checkMonthlyCredits, 60000) // Check every minute
+      fetchCurrentUserCredits()
+      const interval = setInterval(checkMonthlyCredits, 60000)
       return () => clearInterval(interval)
     }
-  }, [teamId])
+  }, [teamId, memberId])
 
   const fetchUsers = async () => {
     try {
@@ -211,31 +249,53 @@ export function CreditManagement() {
     }
   }
 
-  const checkMonthlyCredits = async () => {
-    const usersNeedingCredits = users.filter(user => user.needs_monthly_credits)
-    for (const user of usersNeedingCredits) {
-      if (user.monthly_credits > 0) {
-        await handleAddCredits(user.member_id, user.monthly_credits)
+  const fetchCurrentUserCredits = async () => {
+    try {
+      const response = await fetch(`/api/credits?teamId=${teamId}&memberId=${memberId}`)
+      const data = await response.json()
+      if (data.credits !== undefined) {
+        setCurrentUserCredits(data.credits)
       }
+    } catch (error) {
+      console.error('Failed to fetch user credits:', error)
+      toast.error('Failed to load your credits', toastStyle)
     }
   }
 
-  const handleAddCredits = async (memberId: string, amount: number) => {
+  const checkMonthlyCredits = async () => {
+    // No need to manually handle this as it's done by the backend
+    await fetchUsers()
+    await fetchCurrentUserCredits()
+  }
+
+  const handleAddCredits = async (toMemberId: string, amount: number) => {
+    if (amount > currentUserCredits) {
+      toast.error('You don\'t have enough credits', toastStyle)
+      return
+    }
+
     try {
       const response = await fetch('/api/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'ADD_CREDITS',
-          memberId,
+          fromMemberId: memberId,
+          toMemberId,
           teamId,
           amount
         })
       })
 
-      if (!response.ok) throw new Error('Failed to add credits')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to add credits')
+      }
       
-      await fetchUsers()
+      await Promise.all([
+        fetchUsers(),
+        fetchCurrentUserCredits()
+      ])
       toast.success('Credits added successfully', toastStyle)
     } catch (error) {
       console.error('Failed to add credits:', error)
@@ -243,20 +303,23 @@ export function CreditManagement() {
     }
   }
 
-  const handleRemoveCredits = async (memberId: string, amount: number) => {
+  const handleRemoveCredits = async (fromMemberId: string, amount: number) => {
     try {
       const response = await fetch('/api/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'REMOVE_CREDITS',
-          memberId,
+          memberId: fromMemberId,
           teamId,
           amount
         })
       })
 
-      if (!response.ok) throw new Error('Failed to remove credits')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to remove credits')
+      }
       
       await fetchUsers()
       toast.success('Credits removed successfully', toastStyle)
@@ -266,22 +329,63 @@ export function CreditManagement() {
     }
   }
 
-  const handleSaveAutomation = async (memberId: string, amount: string) => {
+  const handleSaveAutomation = async (toMemberId: string, amount: string) => {
+    const numAmount = parseInt(amount)
+    
+    // If amount is 0 or empty, we're canceling the automation
+    if (amount === '' || numAmount === 0) {
+      try {
+        const response = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'UPDATE_MONTHLY_CREDITS',
+            managerId: memberId,
+            memberId: toMemberId,
+            teamId,
+            amount: 0
+          })
+        })
+
+        if (!response.ok) throw new Error('Failed to cancel automation')
+        
+        await fetchUsers()
+        toast.success('Automation cancelled', toastStyle)
+      } catch (error) {
+        console.error('Failed to cancel automation:', error)
+        toast.error('Failed to cancel automation', toastStyle)
+      }
+      return
+    }
+
+    // Setting up or updating automation
+    if (numAmount > currentUserCredits) {
+      toast.error('You don\'t have enough credits for automation setup', toastStyle)
+      return
+    }
+
     try {
       const response = await fetch('/api/credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'UPDATE_MONTHLY_CREDITS',
-          memberId,
+          managerId: memberId,
+          memberId: toMemberId,
           teamId,
-          amount: parseInt(amount) || 0
+          amount: numAmount
         })
       })
 
-      if (!response.ok) throw new Error('Failed to update automation')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to update automation')
+      }
       
-      await fetchUsers()
+      await Promise.all([
+        fetchUsers(),
+        fetchCurrentUserCredits()
+      ])
       toast.success('Automation updated successfully', toastStyle)
     } catch (error) {
       console.error('Failed to update automation:', error)
@@ -295,9 +399,9 @@ export function CreditManagement() {
 
   useEffect(() => {
     if (selectAll) {
-      const allChecked = users.reduce((acc, user) => ({ 
-        ...acc, 
-        [user.member_id]: true 
+      const allChecked = users.reduce((acc, user) => ({
+        ...acc,
+        [user.member_id]: true
       }), {})
       setCheckedUsers(allChecked)
     } else {
@@ -339,9 +443,15 @@ export function CreditManagement() {
       return
     }
 
+    const numAmount = parseInt(amount) * selectedUserIds.length
+    if (numAmount > currentUserCredits) {
+      toast.error('You don\'t have enough credits for bulk automation', toastStyle)
+      return
+    }
+
     try {
-      for (const memberId of selectedUserIds) {
-        await handleSaveAutomation(memberId, amount)
+      for (const toMemberId of selectedUserIds) {
+        await handleSaveAutomation(toMemberId, amount)
       }
       setBulkAutomationAmount('')
     } catch (error) {
@@ -358,14 +468,20 @@ export function CreditManagement() {
     }
 
     const amount = parseInt(bulkCreditAmount)
-    if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-      toast.error('Invalid amount or insufficient manager credits', toastStyle)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount', toastStyle)
+      return
+    }
+
+    const totalAmount = amount * selectedUsers.length
+    if (totalAmount > currentUserCredits) {
+      toast.error('You don\'t have enough credits for bulk operation', toastStyle)
       return
     }
 
     try {
-      for (const memberId of selectedUsers) {
-        await handleAddCredits(memberId, amount)
+      for (const toMemberId of selectedUsers) {
+        await handleAddCredits(toMemberId, amount)
       }
       setBulkCreditAmount('')
     } catch (error) {
@@ -440,7 +556,7 @@ export function CreditManagement() {
             className="bg-white border border-gray-200 shadow-sm py-2 px-4 flex items-center gap-2 cursor-pointer hover:border-[#5b06be] transition-colors duration-200 h-10"
           >
             <span className="text-sm font-[500] text-gray-600">Your Available Credits</span>
-            <span className="text-xl font-[800] text-[#5b06be]">{managerCredits}</span>
+            <span className="text-xl font-[800] text-[#5b06be]">{currentUserCredits}</span>
           </Card>
           <Button
             onClick={handleCopyInviteLink}
@@ -554,6 +670,7 @@ export function CreditManagement() {
               <UserRow
                 key={user.member_id}
                 user={user}
+                currentUserId={memberId}
                 onAddCredits={handleAddCredits}
                 onRemoveCredits={handleRemoveCredits}
                 checked={checkedUsers[user.member_id] || false}
