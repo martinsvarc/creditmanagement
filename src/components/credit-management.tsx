@@ -17,6 +17,16 @@ interface User {
   automation?: string
 }
 
+interface UserRowProps {
+  user: User
+  onAddCredits: (userId: string, amount: number) => void
+  onRemoveCredits: (userId: string, amount: number) => void
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  onSaveAutomation: (userId: string, amount: string) => void
+  onRemoveUser: (userId: string) => void
+}
+
 const initialUsers: User[] = [
   { id: '2', initials: 'AL', name: 'Alice', credits: 50, color: 'bg-purple-500' },
   { id: '3', initials: 'CH', name: 'Charlie', credits: 25, color: 'bg-purple-600' },
@@ -26,7 +36,7 @@ const initialUsers: User[] = [
   { id: '1', initials: 'BO', name: 'Bob', credits: 75, color: 'bg-red-500' },
 ]
 
-const UserRow = ({ user, onAddCredits, onRemoveCredits, checked, onCheckedChange, onSaveAutomation, onRemoveUser }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, checked, onCheckedChange, onSaveAutomation, onRemoveUser }) => {
   const [creditAmount, setCreditAmount] = useState<string>('')
   const [automationAmount, setAutomationAmount] = useState<string>('')
 
