@@ -82,7 +82,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
                   value={automationAmount}
                   onChange={(e) => setAutomationAmount(e.target.value.replace(/[^0-9]/g, ''))}
                   placeholder="Amount"
-                  className="px-3 py-1.5 rounded-lg border text-sm w-24"
+                  className="h-9 border text-sm w-24"
                 />
                 <Button
                   onClick={() => {
@@ -110,7 +110,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
             value={creditAmount}
             onChange={(e) => setCreditAmount(e.target.value.replace(/[^0-9]/g, ''))}
             placeholder="Amount"
-            className="px-3 py-1.5 rounded-lg border text-sm w-24"
+            className="h-9 border text-sm w-24"
           />
           <Button
             onClick={() => {
@@ -379,7 +379,7 @@ export function CreditManagement() {
                       value={bulkAutomationAmount}
                       onChange={(e) => setBulkAutomationAmount(e.target.value.replace(/[^0-9]/g, ''))}
                       placeholder="Amount"
-                      className="px-3 py-1.5 rounded-lg border text-sm w-24"
+                      className="h-9 border text-sm w-24"
                     />
                     <Button
                       onClick={handleBulkAutomation}
@@ -400,7 +400,7 @@ export function CreditManagement() {
                     value={bulkCreditAmount}
                     onChange={(e) => setBulkCreditAmount(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="Amount"
-                    className="px-3 py-1.5 rounded-lg border text-sm w-24"
+                    className="h-9 border text-sm w-24"
                   />
                   <Button
                     onClick={handleBulkAddCredits}
