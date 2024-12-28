@@ -1,4 +1,4 @@
-import { CreditManagement } from './components/credit-management'
+import { CreditManagement } from '@/components/credit-management'
 
 export default function Page() {
   return (
