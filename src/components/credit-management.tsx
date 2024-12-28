@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CreditCard, UserPlus, X, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CheckedState } from "@radix-ui/react-checkbox"
+
 
 interface User {
   id: string
@@ -22,7 +24,7 @@ interface UserRowProps {
   onAddCredits: (userId: string, amount: number) => void
   onRemoveCredits: (userId: string, amount: number) => void
   checked: boolean
-  onCheckedChange: (checked: boolean) => void
+  onCheckedChange: (checked: CheckedState) => void
   onSaveAutomation: (userId: string, amount: string) => void
   onRemoveUser: (userId: string) => void
 }
@@ -44,10 +46,10 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
     <tr className="h-12 hover:bg-gray-50 border-b border-gray-200 last:border-b-0">
       <td className="py-4 px-4 text-center">
         <div className="flex items-center gap-4 min-h-[32px]">
-          <Checkbox 
-            checked={checked}
-            onCheckedChange={onCheckedChange}
-            className="data-[state=checked]:bg-[#5b06be] data-[state=checked]:border-[#5b06be]"
+         <Checkbox 
+          checked={checked}
+          onCheckedChange={(state: CheckedState) => onCheckedChange(state)}
+          className="data-[state=checked]:bg-[#5b06be] data-[state=checked]:border-[#5b06be]"
           />
           <img
             src="https://res.cloudinary.com/drkudvyog/image/upload/v1734566580/Profila_photo_duha_s_bilym_pozadim_glyneq.png"
@@ -205,12 +207,12 @@ export function CreditManagement() {
     })
   }
 
-  const handleCheckUser = (userId: string, checked: boolean) => {
-    setCheckedUsers(prev => ({
-      ...prev,
-      [userId]: checked
-    }))
-  }
+  const handleCheckUser = (userId: string, checked: CheckedState) => {
+  setCheckedUsers(prev => ({
+    ...prev,
+    [userId]: checked as boolean
+  }))
+}
 
   const handleSaveAutomation = (userId: string, amount: string) => {
     setUsers(users.map(user =>
