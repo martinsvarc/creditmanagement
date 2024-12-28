@@ -8,7 +8,19 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CreditCard, UserPlus, X, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CheckedState } from "@radix-ui/react-checkbox"
+import { toast } from "sonner"
 
+const showSelectUserWarning = () => {
+  toast.warning("Please select at least one user", {
+    style: {
+      background: '#18181B',
+      color: '#fff',
+      border: 'none',
+    },
+    position: 'top-center',
+    duration: 2000,
+  })
+}
 
 interface User {
   id: string
