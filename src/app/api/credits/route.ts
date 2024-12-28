@@ -15,8 +15,8 @@ export async function OPTIONS() {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const teamId = searchParams.get('teamId');
-    const memberId = searchParams.get('memberId');
+    const teamId = searchParams.get('tid');        // Changed from 'teamId'
+    const memberId = searchParams.get('mid');
 
     // If memberId is provided, get single user's credits
     if (memberId) {
