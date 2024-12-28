@@ -236,67 +236,81 @@ export function CreditManagement() {
     ))
   }
 
-  const handleBulkAutomation = () => {
-    const amount = bulkAutomationAmount
-    if (!amount) {
-      alert('Please enter an automation amount')
-      return
-    }
+const handleBulkAutomation = () => {
+  const amount = bulkAutomationAmount
+  const selectedUserIds = Object.entries(checkedUsers)
+    .filter(([_, isChecked]) => isChecked)
+    .map(([id]) => id)
 
-    const selectedUserIds = Object.entries(checkedUsers)
-      .filter(([_, isChecked]) => isChecked)
-      .map(([id]) => id)
-
-    if (selectedUserIds.length === 0) {
-      alert('Please select at least one user')
-      return
-    }
-
-    setUsers(users.map(user =>
-      selectedUserIds.includes(user.id) ? { ...user, automation: amount } : user
-    ))
-    setBulkAutomationAmount('')
+  if (selectedUserIds.length === 0) {
+    showSelectUserWarning()
+    return
   }
 
-  const handleBulkAddCredits = () => {
-    const amount = parseInt(bulkCreditAmount)
-    if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-      alert('Invalid amount or insufficient manager credits')
-      return
-    }
-    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
-    const totalAmount = amount * selectedUsers.length
-    if (totalAmount > managerCredits) {
-      alert('Insufficient manager credits for bulk operation')
-      return
-    }
-    setUsers(users.map(user =>
-      selectedUsers.includes(user.id) ? { ...user, credits: user.credits + amount } : user
-    ))
-    setManagerCredits(prev => prev - totalAmount)
-    setBulkCreditAmount('')
+  if (!amount) {
+    alert('Please enter an automation amount')
+    return
   }
 
-  const handleBulkRemoveCredits = () => {
-    const amount = parseInt(bulkCreditAmount)
-    if (isNaN(amount) || amount <= 0) {
-      alert('Invalid amount')
-      return
-    }
-    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
-    const canRemove = users.every(user => 
-      !selectedUsers.includes(user.id) || user.credits >= amount
-    )
-    if (!canRemove) {
-      alert('One or more selected users have insufficient credits')
-      return
-    }
-    setUsers(users.map(user =>
-      selectedUsers.includes(user.id) ? { ...user, credits: user.credits - amount } : user
-    ))
-    setManagerCredits(prev => prev + amount * selectedUsers.length)
-    setBulkCreditAmount('')
+  setUsers(users.map(user =>
+    selectedUserIds.includes(user.id) ? { ...user, automation: amount } : user
+  ))
+  setBulkAutomationAmount('')
+}
+
+const handleBulkAddCredits = () => {
+  const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
+  if (selectedUsers.length === 0) {
+    showSelectUserWarning()
+    return
   }
+
+  const amount = parseInt(bulkCreditAmount)
+  if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
+    alert('Invalid amount or insufficient manager credits')
+    return
+  }
+
+  const totalAmount = amount * selectedUsers.length
+  if (totalAmount > managerCredits) {
+    alert('Insufficient manager credits for bulk operation')
+    return
+  }
+
+  setUsers(users.map(user =>
+    selectedUsers.includes(user.id) ? { ...user, credits: user.credits + amount } : user
+  ))
+  setManagerCredits(prev => prev - totalAmount)
+  setBulkCreditAmount('')
+}
+
+const handleBulkRemoveCredits = () => {
+  const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
+  if (selectedUsers.length === 0) {
+    showSelectUserWarning()
+    return
+  }
+
+  const amount = parseInt(bulkCreditAmount)
+  if (isNaN(amount) || amount <= 0) {
+    alert('Invalid amount')
+    return
+  }
+
+  const canRemove = users.every(user => 
+    !selectedUsers.includes(user.id) || user.credits >= amount
+  )
+  if (!canRemove) {
+    alert('One or more selected users have insufficient credits')
+    return
+  }
+
+  setUsers(users.map(user =>
+    selectedUsers.includes(user.id) ? { ...user, credits: user.credits - amount } : user
+  ))
+  setManagerCredits(prev => prev + amount * selectedUsers.length)
+  setBulkCreditAmount('')
+}
 
   const handleRemoveUser = (userId: string) => {
     const userToRemove = users.find(user => user.id === userId)
