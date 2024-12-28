@@ -277,7 +277,15 @@ const handleBulkAddCredits = () => {
 
   const amount = parseInt(bulkCreditAmount)
   if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-    alert('Invalid amount or insufficient manager credits')
+    toast.error('Invalid amount or insufficient manager credits', {
+      style: {
+        background: '#18181B',
+        color: '#fff',
+        border: 'none',
+      },
+      position: 'top-center',
+      duration: 2000,
+    })
     return
   }
 
