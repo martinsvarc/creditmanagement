@@ -22,6 +22,16 @@ const showSelectUserWarning = () => {
   })
 }
 
+const toastStyle = {
+  style: {
+    background: '#18181B',
+    color: '#fff',
+    border: 'none',
+  },
+  position: 'top-center' as const,
+  duration: 2000,
+}
+
 interface User {
   id: string
   initials: string
@@ -188,7 +198,7 @@ export function CreditManagement() {
 
   const handleAddCredits = (userId: string, amount: number) => {
     if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-      alert('Invalid amount or insufficient manager credits')
+      toast.error('Invalid amount or insufficient manager credits')
       return
     }
 
@@ -202,7 +212,7 @@ export function CreditManagement() {
     const user = users.find(u => u.id === userId)
 
     if (!user || isNaN(amount) || amount <= 0 || amount > user.credits) {
-      alert('Invalid amount or insufficient user credits')
+      toast.error('Invalid amount or insufficient user credits')
       return
     }
 
@@ -248,7 +258,7 @@ const handleBulkAutomation = () => {
   }
 
   if (!amount) {
-    alert('Please enter an automation amount')
+    toast.error('Please enter an automation amount')
     return
   }
 
@@ -273,7 +283,7 @@ const handleBulkAddCredits = () => {
 
   const totalAmount = amount * selectedUsers.length
   if (totalAmount > managerCredits) {
-    alert('Insufficient manager credits for bulk operation')
+    toast.error('Insufficient manager credits for bulk operation')
     return
   }
 
@@ -293,7 +303,7 @@ const handleBulkRemoveCredits = () => {
 
   const amount = parseInt(bulkCreditAmount)
   if (isNaN(amount) || amount <= 0) {
-    alert('Invalid amount')
+    toast.error('Invalid amount')
     return
   }
 
@@ -301,7 +311,7 @@ const handleBulkRemoveCredits = () => {
     !selectedUsers.includes(user.id) || user.credits >= amount
   )
   if (!canRemove) {
-    alert('One or more selected users have insufficient credits')
+    toast.error('One or more selected users have insufficient credits')
     return
   }
 
