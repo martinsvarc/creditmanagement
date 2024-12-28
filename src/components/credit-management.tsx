@@ -33,34 +33,34 @@ const toastStyle = {
 }
 
 interface User {
-  id: string
-  initials: string
-  name: string
+  member_id: string
+  team_id: string
+  user_name: string
+  user_picture_url: string
   credits: number
-  color: string
-  automation?: string
+  monthly_credits: number
+  needs_monthly_credits?: boolean
 }
 
 interface UserRowProps {
   user: User
-  onAddCredits: (userId: string, amount: number) => void
-  onRemoveCredits: (userId: string, amount: number) => void
+  onAddCredits: (memberId: string, amount: number) => void
+  onRemoveCredits: (memberId: string, amount: number) => void
   checked: boolean
   onCheckedChange: (checked: CheckedState) => void
-  onSaveAutomation: (userId: string, amount: string) => void
-  onRemoveUser: (userId: string) => void
+  onSaveAutomation: (memberId: string, amount: string) => void
+  onRemoveUser: (memberId: string) => void
 }
 
-const initialUsers: User[] = [
-  { id: '2', initials: 'AL', name: 'Alice', credits: 50, color: 'bg-purple-500' },
-  { id: '3', initials: 'CH', name: 'Charlie', credits: 25, color: 'bg-purple-600' },
-  { id: '4', initials: 'DA', name: 'David', credits: 100, color: 'bg-red-400' },
-  { id: '5', initials: 'EV', name: 'Eva', credits: 60, color: 'bg-pink-500' },
-  { id: '6', initials: 'FR', name: 'Frank', credits: 40, color: 'bg-blue-500' },
-  { id: '1', initials: 'BO', name: 'Bob', credits: 75, color: 'bg-red-500' },
-]
-
-const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, checked, onCheckedChange, onSaveAutomation, onRemoveUser }) => {
+const UserRow: React.FC<UserRowProps> = ({ 
+  user, 
+  onAddCredits, 
+  onRemoveCredits, 
+  checked, 
+  onCheckedChange, 
+  onSaveAutomation, 
+  onRemoveUser 
+}) => {
   const [creditAmount, setCreditAmount] = useState<string>('')
   const [automationAmount, setAutomationAmount] = useState<string>('')
 
@@ -74,22 +74,22 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
           className="data-[state=checked]:bg-[#5b06be] data-[state=checked]:border-[#5b06be]"
           />
           <img
-            src="https://res.cloudinary.com/drkudvyog/image/upload/v1734566580/Profila_photo_duha_s_bilym_pozadim_glyneq.png"
-            alt={`${user.name}'s profile`}
+            src={user.user_picture_url || "https://res.cloudinary.com/drkudvyog/image/upload/v1734566580/Profila_photo_duha_s_bilym_pozadim_glyneq.png"}
+            alt={`${user.user_name}'s profile`}
             className="w-8 h-8 rounded-full object-cover"
           />
-          <span className="font-medium">{user.name}</span>
+          <span className="font-medium">{user.user_name}</span>
         </div>
       </td>
       <td className="py-4 px-4 text-center">{user.credits} credits</td>
       <td className="py-4 px-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
-            {user.automation ? (
+            {user.monthly_credits ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">{user.automation} credits/month</span>
+                <span className="text-sm font-medium">{user.monthly_credits} credits/month</span>
                 <Button
-                  onClick={() => onSaveAutomation(user.id, '')}
+                  onClick={() => onSaveAutomation(user.member_id, '')}
                   className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm"
                 >
                   Edit
@@ -109,7 +109,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
                 <Button
                   onClick={() => {
                     if (automationAmount) {
-                      onSaveAutomation(user.id, automationAmount)
+                      onSaveAutomation(user.member_id, automationAmount)
                       setAutomationAmount('')
                     }
                   }}
@@ -137,7 +137,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
           <Button
             onClick={() => {
               if (creditAmount) {
-                onAddCredits(user.id, parseInt(creditAmount))
+                onAddCredits(user.member_id, parseInt(creditAmount))
                 setCreditAmount('')
               }
             }}
@@ -149,7 +149,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
           <Button
             onClick={() => {
               if (creditAmount) {
-                onRemoveCredits(user.id, parseInt(creditAmount))
+                onRemoveCredits(user.member_id, parseInt(creditAmount))
                 setCreditAmount('')
               }
             }}
@@ -162,7 +162,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
       </td>
       <td className="py-4 px-4 text-center">
         <Button
-          onClick={() => onRemoveUser(user.id)}
+          onClick={() => onRemoveUser(user.member_id)}
           variant="ghost"
           size="icon"
           className="hover:bg-red-100 hover:text-red-700"
@@ -175,171 +175,257 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
 }
 
 export function CreditManagement() {
-  const [users, setUsers] = useState<User[]>(initialUsers)
+  const [users, setUsers] = useState<User[]>([])
   const [managerCredits, setManagerCredits] = useState<number>(1000)
   const [checkedUsers, setCheckedUsers] = useState<{ [key: string]: boolean }>({})
   const [selectAll, setSelectAll] = useState(false)
   const [bulkAutomationAmount, setBulkAutomationAmount] = useState('')
   const [bulkCreditAmount, setBulkCreditAmount] = useState('')
   const [copyFeedback, setCopyFeedback] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  // Get teamId from URL
+  const teamId = typeof window !== 'undefined' ? 
+    new URLSearchParams(window.location.search).get('tid') || '' : '';
+
+  useEffect(() => {
+    if (teamId) {
+      fetchUsers()
+      // Set up interval to check for monthly credits
+      const interval = setInterval(checkMonthlyCredits, 60000) // Check every minute
+      return () => clearInterval(interval)
+    }
+  }, [teamId])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`/api/credits?teamId=${teamId}`)
+      const data = await response.json()
+      if (data.users) {
+        setUsers(data.users)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+      toast.error('Failed to load users', toastStyle)
+    }
+  }
+
+  const checkMonthlyCredits = async () => {
+    const usersNeedingCredits = users.filter(user => user.needs_monthly_credits)
+    for (const user of usersNeedingCredits) {
+      if (user.monthly_credits > 0) {
+        await handleAddCredits(user.member_id, user.monthly_credits)
+      }
+    }
+  }
+
+  const handleAddCredits = async (memberId: string, amount: number) => {
+    try {
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'ADD_CREDITS',
+          memberId,
+          teamId,
+          amount
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to add credits')
+      
+      await fetchUsers()
+      toast.success('Credits added successfully', toastStyle)
+    } catch (error) {
+      console.error('Failed to add credits:', error)
+      toast.error('Failed to add credits', toastStyle)
+    }
+  }
+
+  const handleRemoveCredits = async (memberId: string, amount: number) => {
+    try {
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REMOVE_CREDITS',
+          memberId,
+          teamId,
+          amount
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to remove credits')
+      
+      await fetchUsers()
+      toast.success('Credits removed successfully', toastStyle)
+    } catch (error) {
+      console.error('Failed to remove credits:', error)
+      toast.error('Failed to remove credits', toastStyle)
+    }
+  }
+
+  const handleSaveAutomation = async (memberId: string, amount: string) => {
+    try {
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPDATE_MONTHLY_CREDITS',
+          memberId,
+          teamId,
+          amount: parseInt(amount) || 0
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to update automation')
+      
+      await fetchUsers()
+      toast.success('Automation updated successfully', toastStyle)
+    } catch (error) {
+      console.error('Failed to update automation:', error)
+      toast.error('Failed to update automation', toastStyle)
+    }
+  }
 
   const handleSelectAllChange = (checked: CheckedState) => {
-    setSelectAll(!!checked)  // Convert CheckedState to boolean
+    setSelectAll(!!checked)
   }
 
   useEffect(() => {
     if (selectAll) {
-      const allChecked = users.reduce((acc, user) => ({ ...acc, [user.id]: true }), {})
+      const allChecked = users.reduce((acc, user) => ({ 
+        ...acc, 
+        [user.member_id]: true 
+      }), {})
       setCheckedUsers(allChecked)
     } else {
       setCheckedUsers({})
     }
   }, [selectAll, users])
 
-  const handleAddCredits = (userId: string, amount: number) => {
-    if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-      toast.error('Invalid amount or insufficient manager credits')
-      return
-    }
-
-    setUsers(users.map(user =>
-      user.id === userId ? { ...user, credits: user.credits + amount } : user
-    ))
-    setManagerCredits(prev => prev - amount)
-  }
-
-  const handleRemoveCredits = (userId: string, amount: number) => {
-    const user = users.find(u => u.id === userId)
-
-    if (!user || isNaN(amount) || amount <= 0 || amount > user.credits) {
-      toast.error('Invalid amount or insufficient user credits')
-      return
-    }
-
-    setUsers(users.map(u =>
-      u.id === userId ? { ...u, credits: u.credits - amount } : u
-    ))
-    setManagerCredits(prev => prev + amount)
+  const handleCheckUser = (memberId: string, checked: CheckedState) => {
+    setCheckedUsers(prev => ({
+      ...prev,
+      [memberId]: checked as boolean
+    }))
   }
 
   const handleCopyInviteLink = () => {
-    const inviteLink = "https://app.trainedbyai.com/signup-team-member?tid="
+    const inviteLink = `https://app.trainedbyai.com/signup-team-member?tid=${teamId}`
     navigator.clipboard.writeText(inviteLink).then(() => {
       setCopyFeedback('Copied!')
       setTimeout(() => setCopyFeedback(''), 2000)
     }).catch(err => {
-      console.error('Failed to copy: ', err)
+      console.error('Failed to copy:', err)
       setCopyFeedback('Failed to copy')
     })
   }
 
-  const handleCheckUser = (userId: string, checked: CheckedState) => {
-  setCheckedUsers(prev => ({
-    ...prev,
-    [userId]: checked as boolean
-  }))
-}
+  const handleBulkAutomation = async () => {
+    const amount = bulkAutomationAmount
+    const selectedUserIds = Object.entries(checkedUsers)
+      .filter(([_, isChecked]) => isChecked)
+      .map(([id]) => id)
 
-  const handleSaveAutomation = (userId: string, amount: string) => {
-    setUsers(users.map(user =>
-      user.id === userId ? { ...user, automation: amount } : user
-    ))
+    if (selectedUserIds.length === 0) {
+      showSelectUserWarning()
+      return
+    }
+
+    if (!amount) {
+      toast.error('Please enter an automation amount', toastStyle)
+      return
+    }
+
+    try {
+      for (const memberId of selectedUserIds) {
+        await handleSaveAutomation(memberId, amount)
+      }
+      setBulkAutomationAmount('')
+    } catch (error) {
+      console.error('Failed to update bulk automation:', error)
+      toast.error('Failed to update automation for some users', toastStyle)
+    }
   }
 
-const handleBulkAutomation = () => {
-  const amount = bulkAutomationAmount
-  const selectedUserIds = Object.entries(checkedUsers)
-    .filter(([_, isChecked]) => isChecked)
-    .map(([id]) => id)
+  const handleBulkAddCredits = async () => {
+    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
+    if (selectedUsers.length === 0) {
+      showSelectUserWarning()
+      return
+    }
 
-  if (selectedUserIds.length === 0) {
-    showSelectUserWarning()
-    return
+    const amount = parseInt(bulkCreditAmount)
+    if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
+      toast.error('Invalid amount or insufficient manager credits', toastStyle)
+      return
+    }
+
+    try {
+      for (const memberId of selectedUsers) {
+        await handleAddCredits(memberId, amount)
+      }
+      setBulkCreditAmount('')
+    } catch (error) {
+      console.error('Failed to add bulk credits:', error)
+      toast.error('Failed to add credits for some users', toastStyle)
+    }
   }
 
-  if (!amount) {
-    toast.error('Please enter an automation amount')
-    return
+  const handleBulkRemoveCredits = async () => {
+    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
+    if (selectedUsers.length === 0) {
+      showSelectUserWarning()
+      return
+    }
+
+    const amount = parseInt(bulkCreditAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Invalid amount', toastStyle)
+      return
+    }
+
+    try {
+      for (const memberId of selectedUsers) {
+        await handleRemoveCredits(memberId, amount)
+      }
+      setBulkCreditAmount('')
+    } catch (error) {
+      console.error('Failed to remove bulk credits:', error)
+      toast.error('Failed to remove credits for some users', toastStyle)
+    }
   }
 
-  setUsers(users.map(user =>
-    selectedUserIds.includes(user.id) ? { ...user, automation: amount } : user
-  ))
-  setBulkAutomationAmount('')
-}
+  const handleRemoveUser = async (memberId: string) => {
+    try {
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REMOVE_USER',
+          memberId,
+          teamId
+        })
+      })
 
-const handleBulkAddCredits = () => {
-  const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
-  if (selectedUsers.length === 0) {
-    showSelectUserWarning()
-    return
-  }
+      if (!response.ok) throw new Error('Failed to remove user')
 
-  const amount = parseInt(bulkCreditAmount)
-  if (isNaN(amount) || amount <= 0 || amount > managerCredits) {
-    toast.error('Invalid amount or insufficient manager credits', {
-      style: {
-        background: '#18181B',
-        color: '#fff',
-        border: 'none',
-      },
-      position: 'top-center',
-      duration: 2000,
-    })
-    return
-  }
-
-  const totalAmount = amount * selectedUsers.length
-  if (totalAmount > managerCredits) {
-    toast.error('Insufficient manager credits for bulk operation')
-    return
-  }
-
-  setUsers(users.map(user =>
-    selectedUsers.includes(user.id) ? { ...user, credits: user.credits + amount } : user
-  ))
-  setManagerCredits(prev => prev - totalAmount)
-  setBulkCreditAmount('')
-}
-
-const handleBulkRemoveCredits = () => {
-  const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
-  if (selectedUsers.length === 0) {
-    showSelectUserWarning()
-    return
-  }
-
-  const amount = parseInt(bulkCreditAmount)
-  if (isNaN(amount) || amount <= 0) {
-    toast.error('Invalid amount')
-    return
-  }
-
-  const canRemove = users.every(user => 
-    !selectedUsers.includes(user.id) || user.credits >= amount
-  )
-  if (!canRemove) {
-    toast.error('One or more selected users have insufficient credits')
-    return
-  }
-
-  setUsers(users.map(user =>
-    selectedUsers.includes(user.id) ? { ...user, credits: user.credits - amount } : user
-  ))
-  setManagerCredits(prev => prev + amount * selectedUsers.length)
-  setBulkCreditAmount('')
-}
-
-  const handleRemoveUser = (userId: string) => {
-    const userToRemove = users.find(user => user.id === userId)
-    if (userToRemove) {
-      setManagerCredits(prev => prev + userToRemove.credits)
-      setUsers(users.filter(user => user.id !== userId))
+      await fetchUsers()
       setCheckedUsers(prev => {
-        const { [userId]: _, ...rest } = prev
+        const { [memberId]: _, ...rest } = prev
         return rest
       })
+      toast.success('User removed successfully', toastStyle)
+    } catch (error) {
+      console.error('Failed to remove user:', error)
+      toast.error('Failed to remove user', toastStyle)
     }
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full">Loading...</div>
   }
 
   return (
@@ -466,12 +552,12 @@ const handleBulkRemoveCredits = () => {
             </tr>
             {users.map(user => (
               <UserRow
-                key={user.id}
+                key={user.member_id}
                 user={user}
                 onAddCredits={handleAddCredits}
                 onRemoveCredits={handleRemoveCredits}
-                checked={checkedUsers[user.id] || false}
-                onCheckedChange={(checked) => handleCheckUser(user.id, checked)}
+                checked={checkedUsers[user.member_id] || false}
+                onCheckedChange={(checked) => handleCheckUser(user.member_id, checked)}
                 onSaveAutomation={handleSaveAutomation}
                 onRemoveUser={handleRemoveUser}
               />
@@ -482,4 +568,3 @@ const handleBulkRemoveCredits = () => {
     </div>
   )
 }
-
