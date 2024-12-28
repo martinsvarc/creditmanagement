@@ -120,7 +120,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onAddCredits, onRemoveCredits, 
               }
             }}
             disabled={!creditAmount}
-            className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm"
+            className="h-9 bg-green-100 text-green-700 text-sm"
           >
             Add To user
           </Button>
@@ -405,7 +405,7 @@ export function CreditManagement() {
                   <Button
                     onClick={handleBulkAddCredits}
                     disabled={!bulkCreditAmount}
-                    className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm"
+                    className="h-9 bg-green-100 text-green-700 text-sm"
                   >
                     Add To All
                   </Button>
