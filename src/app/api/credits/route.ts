@@ -78,39 +78,39 @@ export async function POST(request: Request) {
 async function handleAddCredits(data: any) {
   const { fromMemberId, toMemberId, teamId, amount } = data;
   
-  // Start a transaction
-  const client = await sql.begin();
-  
   try {
     // Check if sender has enough credits
-    const { rows: [sender] } = await client.query`
+    const { rows: [sender] } = await sql`
       SELECT credits FROM user_credits 
       WHERE member_id = ${fromMemberId} AND team_id = ${teamId}
     `;
     
     if (!sender || sender.credits < amount) {
-      await client.rollback();
       return NextResponse.json({ 
         error: 'Insufficient credits' 
       }, { status: 400 });
     }
 
     // Remove credits from sender
-    await client.query`
+    await sql`
       UPDATE user_credits 
-      SET credits = credits - ${amount}
+      SET 
+        credits = credits - ${amount},
+        updated_at = CURRENT_TIMESTAMP
       WHERE member_id = ${fromMemberId} AND team_id = ${teamId}
     `;
 
     // Add credits to receiver
-    await client.query`
+    await sql`
       UPDATE user_credits 
-      SET credits = credits + ${amount}
+      SET 
+        credits = credits + ${amount},
+        updated_at = CURRENT_TIMESTAMP
       WHERE member_id = ${toMemberId} AND team_id = ${teamId}
     `;
 
     // Record the transaction
-    await client.query`
+    await sql`
       INSERT INTO credit_transactions (
         from_member_id, 
         to_member_id, 
@@ -126,11 +126,11 @@ async function handleAddCredits(data: any) {
       )
     `;
 
-    await client.commit();
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    await client.rollback();
+    console.error('Transaction error:', error);
+    // If any error occurs, the transaction will automatically rollback
     throw error;
   }
 }
@@ -138,53 +138,59 @@ async function handleAddCredits(data: any) {
 async function handleRemoveCredits(data: any) {
   const { memberId, teamId, amount } = data;
 
-  const result = await sql`
-    WITH updated AS (
+  try {
+    // Check if user has enough credits
+    const { rows: [user] } = await sql`
+      SELECT credits FROM user_credits 
+      WHERE member_id = ${memberId} AND team_id = ${teamId}
+    `;
+
+    if (!user || user.credits < amount) {
+      return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
+    }
+
+    // Remove credits
+    await sql`
       UPDATE user_credits
       SET 
         credits = credits - ${amount},
         updated_at = CURRENT_TIMESTAMP
-      WHERE 
-        member_id = ${memberId} 
-        AND team_id = ${teamId}
-        AND credits >= ${amount}
-      RETURNING *
-    )
-    INSERT INTO credit_transactions (
-      from_member_id, 
-      to_member_id, 
-      team_id, 
-      amount, 
-      transaction_type
-    )
-    SELECT 
-      ${memberId}, 
-      ${memberId}, 
-      ${teamId}, 
-      ${amount}, 
-      'REMOVE'
-    WHERE EXISTS (SELECT 1 FROM updated)
-    RETURNING *;
-  `;
+      WHERE member_id = ${memberId} AND team_id = ${teamId}
+    `;
 
-  if (result.rowCount === 0) {
-    return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
+    // Record transaction
+    await sql`
+      INSERT INTO credit_transactions (
+        from_member_id, 
+        to_member_id, 
+        team_id, 
+        amount, 
+        transaction_type
+      ) VALUES (
+        ${memberId}, 
+        ${memberId}, 
+        ${teamId}, 
+        ${amount}, 
+        'REMOVE'
+      )
+    `;
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Transaction error:', error);
+    throw error;
   }
-
-  return NextResponse.json({ success: true });
 }
 
 async function handleUpdateMonthlyCredits(data: any) {
   const { managerId, memberId, teamId, amount } = data;
   const numAmount = parseInt(amount);
   
-  // Start a transaction
-  const client = await sql.begin();
-  
   try {
     // If amount is 0, we're canceling the automation
     if (numAmount === 0) {
-      await client.query`
+      await sql`
         UPDATE user_credits 
         SET 
           monthly_credits = 0,
@@ -194,7 +200,7 @@ async function handleUpdateMonthlyCredits(data: any) {
         WHERE member_id = ${memberId} AND team_id = ${teamId}
       `;
 
-      await client.query`
+      await sql`
         INSERT INTO credit_transactions (
           from_member_id, 
           to_member_id, 
@@ -210,25 +216,23 @@ async function handleUpdateMonthlyCredits(data: any) {
         )
       `;
 
-      await client.commit();
       return NextResponse.json({ success: true });
     }
 
     // Check if manager has enough credits
-    const { rows: [manager] } = await client.query`
+    const { rows: [manager] } = await sql`
       SELECT credits FROM user_credits 
       WHERE member_id = ${managerId} AND team_id = ${teamId}
     `;
     
     if (!manager || manager.credits < numAmount) {
-      await client.rollback();
       return NextResponse.json({ 
         error: 'Insufficient credits for monthly automation setup' 
       }, { status: 400 });
     }
 
     // Update the monthly credits setup and do initial transfer
-    await client.query`
+    await sql`
       UPDATE user_credits 
       SET 
         monthly_credits = ${numAmount},
@@ -240,14 +244,16 @@ async function handleUpdateMonthlyCredits(data: any) {
     `;
 
     // Subtract initial credits from manager
-    await client.query`
+    await sql`
       UPDATE user_credits 
-      SET credits = credits - ${numAmount}
+      SET 
+        credits = credits - ${numAmount},
+        updated_at = CURRENT_TIMESTAMP
       WHERE member_id = ${managerId} AND team_id = ${teamId}
     `;
 
     // Record the transaction
-    await client.query`
+    await sql`
       INSERT INTO credit_transactions (
         from_member_id, 
         to_member_id, 
@@ -263,11 +269,10 @@ async function handleUpdateMonthlyCredits(data: any) {
       )
     `;
 
-    await client.commit();
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    await client.rollback();
+    console.error('Transaction error:', error);
     throw error;
   }
 }
@@ -275,11 +280,23 @@ async function handleUpdateMonthlyCredits(data: any) {
 async function handleRemoveUser(data: any) {
   const { memberId, teamId } = data;
 
-  const result = await sql`
-    DELETE FROM user_credits
-    WHERE member_id = ${memberId} AND team_id = ${teamId}
-    RETURNING *;
-  `;
+  try {
+    // First delete related transactions
+    await sql`
+      DELETE FROM credit_transactions
+      WHERE (from_member_id = ${memberId} OR to_member_id = ${memberId})
+      AND team_id = ${teamId}
+    `;
 
-  return NextResponse.json({ success: true });
+    // Then delete user
+    await sql`
+      DELETE FROM user_credits
+      WHERE member_id = ${memberId} AND team_id = ${teamId}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete error:', error);
+    throw error;
+  }
 }
