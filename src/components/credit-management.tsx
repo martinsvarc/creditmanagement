@@ -378,7 +378,7 @@ const handleBulkRemoveCredits = () => {
                       <Info className="w-4 h-4 text-white cursor-pointer" />
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
-                      <p className="text-sm">One credit = one minute of training</p>
+                      <p className="text-sm">One Credit = One Minute of Training</p>
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -391,7 +391,7 @@ const handleBulkRemoveCredits = () => {
                       <Info className="w-4 h-4 text-white cursor-pointer" />
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2">
-                      <p className="text-sm">Credits are added every month</p>
+                      <p className="text-sm">Credits Are Automatically Added Every 30 Days</p>
                     </PopoverContent>
                   </Popover>
                 </div>
