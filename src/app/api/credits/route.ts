@@ -101,6 +101,24 @@ async function handleAddCredits(data: any) {
       }, { status: 400 });
     }
 
+    // Send webhook notification first - if this fails, nothing else will happen
+    const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook-test/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        giver: fromMemberId,
+        receiver: toMemberId,
+        amount: amount
+      })
+    });
+
+    if (!webhookResponse.ok) {
+      throw new Error('Webhook notification failed');
+    }
+
+    // If webhook succeeded, proceed with the transfer
     // Remove credits from sender
     await sql`
       UPDATE user_credits 
@@ -141,7 +159,9 @@ async function handleAddCredits(data: any) {
   } catch (error) {
     console.error('Transaction error:', error);
     // If any error occurs, the transaction will automatically rollback
-    throw error;
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Operation failed' 
+    }, { status: 500 });
   }
 }
 
