@@ -638,6 +638,7 @@ const teamId = typeof window !== 'undefined' ?
         </div>
         <div className="flex items-center gap-4 mt-4 sm:mt-0">
           <Card 
+            onClick={() => window.parent.location.href = 'https://app.trainedbyai.com/credits'}
             className="bg-white border border-gray-200 shadow-sm py-2 px-4 flex items-center gap-2 cursor-pointer hover:border-[#5b06be] transition-colors duration-200 h-10"
           >
             <span className="text-sm font-[500] text-gray-600">Your Available Credits</span>
