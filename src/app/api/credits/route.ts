@@ -207,6 +207,14 @@ async function handleRemoveCredits(data: any, request: Request) {
   const { memberId, teamId, amount } = data;
 
   try {
+    // Get the current user (receiver) from the referer URL
+    const referer = request.headers.get('referer');
+    const refererUrl = new URL(referer);
+    const currentUserId = refererUrl.searchParams.get('memberId');
+    
+    console.log('Referer URL:', referer);  // For debugging
+    console.log('Current User ID:', currentUserId);  // For debugging
+
     // Check if user has enough credits
     const { rows: [user] } = await sql`
       SELECT credits FROM user_credits 
@@ -216,10 +224,6 @@ async function handleRemoveCredits(data: any, request: Request) {
     if (!user || user.credits < amount) {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
     }
-
-    // Get the current user (receiver) from the URL
-    const url = new URL(request.url);
-    const currentUserId = url.searchParams.get('memberId');
 
     // Send webhook notification first
     const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook-test/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
