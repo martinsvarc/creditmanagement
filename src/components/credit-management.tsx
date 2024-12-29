@@ -550,8 +550,7 @@ const teamId = typeof window !== 'undefined' ?
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'REMOVE_CREDITS',
-          memberId: targetMemberId,  // The one we're taking credits from
-          fromMemberId: memberId,    // The one getting credits back (current user)
+          memberId: targetMemberId,
           teamId,
           amount
         })
@@ -567,8 +566,8 @@ const teamId = typeof window !== 'undefined' ?
     }
 
     await Promise.all([
-      fetchUsers(),
-      fetchCurrentUserCredits()
+      fetchUsers(),            // This updates the table
+      fetchCurrentUserCredits() // This will update "Your Available Credits"
     ]);
     
     setBulkCreditAmount('');
