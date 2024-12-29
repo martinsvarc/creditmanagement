@@ -9,6 +9,14 @@ import { CreditCard, UserPlus, X, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CheckedState } from "@radix-ui/react-checkbox"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const showSelectUserWarning = () => {
   toast.warning("Please select at least one user", {
@@ -67,6 +75,7 @@ const UserRow: React.FC<UserRowProps> = ({
   const [creditAmount, setCreditAmount] = useState<string>('')
   const [automationAmount, setAutomationAmount] = useState<string>('')
   const [isEditingAutomation, setIsEditingAutomation] = useState(false)
+  const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false)
 
   const isOwnAutomation = user.monthly_credit_manager_id === currentUserId
 
@@ -198,13 +207,43 @@ const UserRow: React.FC<UserRowProps> = ({
       </td>
       <td className="py-4 px-4 text-center">
         <Button
-          onClick={() => onRemoveUser(user.member_id)}
+          onClick={() => setIsRemoveDialogOpen(true)}
           variant="ghost"
           size="icon"
           className="hover:bg-red-100 hover:text-red-700"
         >
           <X className="h-5 w-5" />
         </Button>
+        <Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Remove User</DialogTitle>
+              <DialogDescription className="pt-4">
+                Are you sure you want to remove <span className="font-semibold text-black">{user.user_name}</span>? 
+                This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsRemoveDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => {
+                  onRemoveUser(user.member_id)
+                  setIsRemoveDialogOpen(false)
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                Remove User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </td>
     </tr>
   )
@@ -599,31 +638,50 @@ const teamId = typeof window !== 'undefined' ?
   }
 };
 
-  const handleRemoveUser = async (memberId: string) => {
-    try {
-      const response = await fetch('/api/credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'REMOVE_USER',
-          memberId,
-          teamId
-        })
+ const handleRemoveUser = async (memberId: string) => {
+  try {
+    // Send webhook notification first
+    const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook-test/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        memberId,
+        teamId
       })
+    });
 
-      if (!response.ok) throw new Error('Failed to remove user')
-
-      await fetchUsers()
-      setCheckedUsers(prev => {
-        const { [memberId]: _, ...rest } = prev
-        return rest
-      })
-      toast.success('User removed successfully', toastStyle)
-    } catch (error) {
-      console.error('Failed to remove user:', error)
-      toast.error('Failed to remove user', toastStyle)
+    if (!webhookResponse.ok) {
+      throw new Error('Failed to send webhook notification');
     }
+
+    // Then proceed with user removal
+    const response = await fetch('/api/credits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'REMOVE_USER',
+        memberId,
+        teamId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to remove user');
+    }
+
+    await fetchUsers();
+    setCheckedUsers(prev => {
+      const { [memberId]: _, ...rest } = prev;
+      return rest;
+    });
+    toast.success('User removed successfully', toastStyle);
+  } catch (error) {
+    console.error('Failed to remove user:', error);
+    toast.error('Failed to remove user', toastStyle);
   }
+};
 
   if (loading) {
     return <div className="flex items-center justify-center h-full">Loading...</div>
