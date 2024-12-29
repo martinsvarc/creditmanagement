@@ -226,17 +226,15 @@ export function CreditManagement() {
 const teamId = typeof window !== 'undefined' ? 
   new URLSearchParams(window.location.search).get('teamId') || '' : '';
 
-  useEffect(() => {
+ useEffect(() => {
     if (teamId && memberId) {
       fetchUsers()
       fetchCurrentUserCredits()
       // Set up intervals for data refresh
       const monthlyInterval = setInterval(checkMonthlyCredits, 60000)
       const refreshInterval = setInterval(() => {
-        fetchUsers()
-        fetchCurrentUserCredits()
+        fetchCurrentUserCredits() // Only refresh credits, not users
       }, 5000) // Refresh every 5 seconds
-
       return () => {
         clearInterval(monthlyInterval)
         clearInterval(refreshInterval)
