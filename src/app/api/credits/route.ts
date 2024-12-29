@@ -11,25 +11,26 @@ export async function OPTIONS() {
   });
 }
 
-// Fetch user credits
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const teamId = searchParams.get('teamId');        
     const memberId = searchParams.get('memberId');
+    
+    console.log('API GET Request received:', {
+      url: request.url,
+      teamId,
+      memberId
+    });
 
-    // First, log what parameters we received
-    console.log('Received params:', { teamId, memberId });
-
-    // If memberId is provided, get single user's credits
-    if (memberId) {
-      // This is where we add the test query and logging
+  if (memberId) {
+      console.log('Executing single user query with:', { memberId, teamId });
       const { rows } = await sql`
         SELECT * FROM user_credits 
         WHERE member_id = ${memberId} 
         AND team_id = ${teamId}
       `;
-      console.log('Raw SQL result:', rows);
+      console.log('Single user query result:', rows);
 
       // Then continue with your original logic
       return NextResponse.json({ credits: rows[0]?.credits || 0 });
