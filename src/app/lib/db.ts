@@ -6,6 +6,11 @@ export async function executeQuery(query: string, params: any[] = []) {
     return { success: true, data: result.rows };
   } catch (error) {
     console.error('Database query error:', error);
-    return { success: false, error: error.message };
+    // Type guard to check if error is an Error object
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    // Fallback for non-Error objects
+    return { success: false, error: 'An unknown error occurred' };
   }
 }
