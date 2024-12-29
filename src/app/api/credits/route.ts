@@ -68,12 +68,6 @@ export async function POST(request: Request) {
         return handleAddCredits(data);
       case 'REMOVE_CREDITS':
         return handleRemoveCredits(data, request);
-
-    switch (action) {
-      case 'ADD_CREDITS':
-        return handleAddCredits(data);
-      case 'REMOVE_CREDITS':
-        return handleRemoveCredits(data, request);
       case 'ADD_DIRECT_CREDITS': 
         return handleAddDirectCredits(data);
       case 'UPDATE_MONTHLY_CREDITS':
