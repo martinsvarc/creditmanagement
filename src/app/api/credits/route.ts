@@ -224,7 +224,7 @@ async function handleRemoveCredits(data: any) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        giver: memberId,      // The one we're taking credits from
+        giver: memberId,       // The one we're taking credits from
         receiver: fromMemberId, // The one getting credits back
         amount: amount
       })
