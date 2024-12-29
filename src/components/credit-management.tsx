@@ -222,9 +222,9 @@ export function CreditManagement() {
 
  // Get IDs from URL
   const memberId = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search).get('member_id') || '' : '';
-  const teamId = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search).get('team_id') || '' : '';
+  new URLSearchParams(window.location.search).get('memberId') || '' : '';
+const teamId = typeof window !== 'undefined' ? 
+  new URLSearchParams(window.location.search).get('teamId') || '' : '';
 
   useEffect(() => {
     if (teamId && memberId) {
