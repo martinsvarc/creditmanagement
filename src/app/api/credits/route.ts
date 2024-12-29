@@ -72,6 +72,8 @@ export async function POST(request: Request) {
         return handleUpdateMonthlyCredits(data);
       case 'REMOVE_USER':
         return handleRemoveUser(data);
+      case 'CREATE_USER':
+        return handleCreateUser(data);
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
@@ -304,5 +306,57 @@ async function handleRemoveUser(data: any) {
   } catch (error) {
     console.error('Delete error:', error);
     throw error;
+  }
+}
+
+async function handleCreateUser(data: any) {
+  const { memberId, teamId, userName, userPictureUrl = '', initialCredits = 0 } = data;
+  
+  try {
+    // Check if user already exists
+    const { rows: existingUsers } = await sql`
+      SELECT * FROM user_credits 
+      WHERE member_id = ${memberId} 
+      AND team_id = ${teamId}
+    `;
+
+    if (existingUsers.length > 0) {
+      return NextResponse.json({ 
+        error: 'User already exists' 
+      }, { status: 400 });
+    }
+
+    // Create new user
+    const { rows } = await sql`
+      INSERT INTO user_credits (
+        member_id,
+        team_id,
+        user_name,
+        user_picture_url,
+        credits,
+        monthly_credits,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${memberId},
+        ${teamId},
+        ${userName},
+        ${userPictureUrl},
+        ${initialCredits},
+        0,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json({ 
+      success: true, 
+      user: rows[0] 
+    });
+
+  } catch (error) {
+    console.error('Create user error:', error);
+    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
 }
