@@ -207,13 +207,43 @@ const UserRow: React.FC<UserRowProps> = ({
       </td>
       <td className="py-4 px-4 text-center">
         <Button
-          onClick={() => setIsRemoveDialogOpen(true)}
-          variant="ghost"
-          size="icon"
-          className="hover:bg-red-100 hover:text-red-700"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+  onClick={() => setIsRemoveDialogOpen(true)} // This opens the dialog
+  variant="ghost"
+  size="icon"
+  className="hover:bg-red-100 hover:text-red-700"
+>
+  <X className="h-5 w-5" />
+</Button>
+<Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
+  <DialogContent className="sm:max-w-[425px]">
+    <DialogHeader>
+      <DialogTitle>Remove User</DialogTitle>
+      <DialogDescription className="pt-4">
+        Are you sure you want to remove <span className="font-semibold text-black">{user.user_name}</span>? 
+        This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="flex gap-2 pt-4">
+      <Button 
+        variant="outline" 
+        onClick={() => setIsRemoveDialogOpen(false)}
+        className="flex-1"
+      >
+        Cancel
+      </Button>
+      <Button 
+        variant="destructive"
+        onClick={() => {
+          onRemoveUser(user.member_id)
+          setIsRemoveDialogOpen(false)
+        }}
+        className="flex-1 bg-red-600 hover:bg-red-700"
+      >
+        Remove User
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
         <Dialog open={isRemoveDialogOpen} onOpenChange={setIsRemoveDialogOpen}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
