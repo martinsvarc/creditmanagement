@@ -841,7 +841,7 @@ const teamId = typeof window !== 'undefined' ?
               <td className="py-4 px-4 text-center">-</td>
             </tr>
             {users
-  .filter(user => user.member_id !== memberId) // Filter out the current user
+  .filter(user => user.member_id !== memberId) // Only hide from display
   .map(user => (
     <UserRow
       key={user.member_id}
