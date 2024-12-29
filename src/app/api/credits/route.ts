@@ -209,13 +209,21 @@ async function handleRemoveCredits(data: any, request: Request) {
   try {
     // Get the current user (receiver) from the referer URL
     const referer = request.headers.get('referer');
+    if (!referer) {
+      throw new Error('Could not determine current user');
+    }
+    
     const refererUrl = new URL(referer);
     const currentUserId = refererUrl.searchParams.get('memberId');
     
+    if (!currentUserId) {
+      throw new Error('Could not determine current user ID');
+    }
+
     console.log('Referer URL:', referer);  // For debugging
     console.log('Current User ID:', currentUserId);  // For debugging
 
-    // Check if user has enough credits
+    // Rest of your code remains the same
     const { rows: [user] } = await sql`
       SELECT credits FROM user_credits 
       WHERE member_id = ${memberId} AND team_id = ${teamId}
