@@ -220,11 +220,11 @@ export function CreditManagement() {
   const [copyFeedback, setCopyFeedback] = useState('')
   const [loading, setLoading] = useState(true)
 
-  // Get IDs from URL
+ // Get IDs from URL
   const memberId = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search).get('mid') || '' : '';
+    new URLSearchParams(window.location.search).get('member_id') || '' : '';
   const teamId = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search).get('tid') || '' : '';
+    new URLSearchParams(window.location.search).get('team_id') || '' : '';
 
   useEffect(() => {
     if (teamId && memberId) {
