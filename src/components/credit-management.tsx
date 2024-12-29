@@ -236,31 +236,34 @@ export function CreditManagement() {
   }, [teamId, memberId])
 
   const fetchUsers = async () => {
-    try {
-      const response = await fetch(`/api/credits?teamId=${teamId}`)
-      const data = await response.json()
-      if (data.users) {
-        setUsers(data.users)
-        setLoading(false)
-      }
-    } catch (error) {
-      console.error('Failed to fetch users:', error)
-      toast.error('Failed to load users', toastStyle)
-    }
+  try {
+    console.log('Fetching users with teamId:', teamId);
+    // Make sure the URL matches exactly
+    const response = await fetch(`/api/credits?teamId=${teamId}`);
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Response data:', data);
+    // ... rest of the code
+  } catch (error) {
+    console.error('Failed to fetch users:', error);
+    setLoading(false);
   }
+}
 
   const fetchCurrentUserCredits = async () => {
-    try {
-      const response = await fetch(`/api/credits?teamId=${teamId}&memberId=${memberId}`)
-      const data = await response.json()
-      if (data.credits !== undefined) {
-        setCurrentUserCredits(data.credits)
-      }
-    } catch (error) {
-      console.error('Failed to fetch user credits:', error)
-      toast.error('Failed to load your credits', toastStyle)
-    }
+  try {
+    console.log('Fetching user credits with:', { teamId, memberId });
+    // Make sure the URL matches exactly
+    const response = await fetch(`/api/credits?teamId=${teamId}&memberId=${memberId}`);
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Response data:', data);
+    // ... rest of the code
+  } catch (error) {
+    console.error('Failed to fetch user credits:', error);
+    setLoading(false);
   }
+}
 
   const checkMonthlyCredits = async () => {
     // No need to manually handle this as it's done by the backend
