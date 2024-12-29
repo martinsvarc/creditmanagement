@@ -230,8 +230,17 @@ const teamId = typeof window !== 'undefined' ?
     if (teamId && memberId) {
       fetchUsers()
       fetchCurrentUserCredits()
-      const interval = setInterval(checkMonthlyCredits, 60000)
-      return () => clearInterval(interval)
+      // Set up intervals for data refresh
+      const monthlyInterval = setInterval(checkMonthlyCredits, 60000)
+      const refreshInterval = setInterval(() => {
+        fetchUsers()
+        fetchCurrentUserCredits()
+      }, 5000) // Refresh every 5 seconds
+
+      return () => {
+        clearInterval(monthlyInterval)
+        clearInterval(refreshInterval)
+      }
     }
   }, [teamId, memberId])
 
@@ -264,6 +273,16 @@ const teamId = typeof window !== 'undefined' ?
     if (data.credits !== undefined) {
       setCurrentUserCredits(data.credits);
     }
+    
+    // Double check after a short delay
+    setTimeout(async () => {
+      const verifyResponse = await fetch(`/api/credits?teamId=${teamId}&memberId=${memberId}`);
+      const verifyData = await verifyResponse.json();
+      if (verifyData.credits !== undefined) {
+        setCurrentUserCredits(verifyData.credits);
+      }
+    }, 1000);
+
     setLoading(false);
   } catch (error) {
     console.error('Failed to fetch user credits:', error);
@@ -330,7 +349,11 @@ const teamId = typeof window !== 'undefined' ?
         throw new Error(error.message || 'Failed to remove credits')
       }
       
+      // Update both the table and current user credits
+      await fetchCurrentUserCredits()
+      await new Promise(resolve => setTimeout(resolve, 500))
       await fetchUsers()
+      
       toast.success('Credits removed successfully', toastStyle)
     } catch (error) {
       console.error('Failed to remove credits:', error)
