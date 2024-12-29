@@ -1,3 +1,4 @@
+'use client';
 import { CreditManagement } from '@/components/credit-management'
 
 export default function Page() {
@@ -7,4 +8,3 @@ export default function Page() {
     </div>
   )
 }
-
