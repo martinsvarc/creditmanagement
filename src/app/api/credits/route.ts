@@ -18,14 +18,20 @@ export async function GET(request: Request) {
     const teamId = searchParams.get('teamId');        
     const memberId = searchParams.get('memberId');
 
+    // First, log what parameters we received
+    console.log('Received params:', { teamId, memberId });
+
     // If memberId is provided, get single user's credits
     if (memberId) {
+      // This is where we add the test query and logging
       const { rows } = await sql`
-        SELECT credits 
-        FROM user_credits 
+        SELECT * FROM user_credits 
         WHERE member_id = ${memberId} 
         AND team_id = ${teamId}
       `;
+      console.log('Raw SQL result:', rows);
+
+      // Then continue with your original logic
       return NextResponse.json({ credits: rows[0]?.credits || 0 });
     }
 
@@ -43,7 +49,6 @@ export async function GET(request: Request) {
       WHERE team_id = ${teamId}
       ORDER BY user_name ASC;
     `;
-
     return NextResponse.json({ users: rows });
 
   } catch (error: any) {
