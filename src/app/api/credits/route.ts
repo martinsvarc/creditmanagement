@@ -145,6 +145,44 @@ async function handleAddCredits(data: any) {
   }
 }
 
+async function handleAddDirectCredits(data: any) {
+  const { memberId, teamId, amount } = data;
+  
+  try {
+    // Add credits directly to user
+    await sql`
+      UPDATE user_credits 
+      SET 
+        credits = credits + ${amount},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE member_id = ${memberId} AND team_id = ${teamId}
+    `;
+
+    // Record the transaction
+    await sql`
+      INSERT INTO credit_transactions (
+        from_member_id, 
+        to_member_id, 
+        team_id, 
+        amount, 
+        transaction_type
+      ) VALUES (
+        ${memberId}, 
+        ${memberId}, 
+        ${teamId}, 
+        ${amount}, 
+        'DIRECT_ADD'
+      )
+    `;
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Transaction error:', error);
+    throw error;
+  }
+}
+
 async function handleRemoveCredits(data: any) {
   const { memberId, teamId, amount } = data;
 
