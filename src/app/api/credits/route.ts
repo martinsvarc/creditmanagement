@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       case 'ADD_CREDITS':
         return handleAddCredits(data);
       case 'REMOVE_CREDITS':
-        return handleRemoveCredits(data);
+        return handleRemoveCredits(data, request);
       case 'ADD_DIRECT_CREDITS': 
         return handleAddDirectCredits(data);
       case 'UPDATE_MONTHLY_CREDITS':
@@ -253,13 +253,13 @@ async function handleRemoveCredits(data: any, request: Request) {
       WHERE member_id = ${memberId} AND team_id = ${teamId}
     `;
 
-    // Add credits back to the original giver
+    // Add credits back to the current user
     await sql`
       UPDATE user_credits
       SET 
         credits = credits + ${amount},
         updated_at = CURRENT_TIMESTAMP
-      WHERE member_id = ${fromMemberId} AND team_id = ${teamId}
+      WHERE member_id = ${currentUserId} AND team_id = ${teamId}
     `;
 
     // Record transaction
@@ -272,7 +272,7 @@ async function handleRemoveCredits(data: any, request: Request) {
         transaction_type
       ) VALUES (
         ${memberId}, 
-        ${fromMemberId}, 
+        ${currentUserId}, 
         ${teamId}, 
         ${amount}, 
         'REMOVE'
