@@ -840,9 +840,9 @@ const teamId = typeof window !== 'undefined' ?
               </td>
               <td className="py-4 px-4 text-center">-</td>
             </tr>
-            {users
-  .filter(user => user.member_id !== memberId) // Only hide from display
-  .map(user => (
+            {users.map(user => 
+  // Skip rendering the current user's row but keep them in the data
+  user.member_id === memberId ? null : (
     <UserRow
       key={user.member_id}
       user={user}
@@ -854,7 +854,8 @@ const teamId = typeof window !== 'undefined' ?
       onSaveAutomation={handleSaveAutomation}
       onRemoveUser={handleRemoveUser}
     />
-))}
+  )
+)}
           </tbody>
         </table>
       </div>
