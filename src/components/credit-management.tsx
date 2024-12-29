@@ -528,28 +528,56 @@ const teamId = typeof window !== 'undefined' ?
   }
 
   const handleBulkRemoveCredits = async () => {
-    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
-    if (selectedUsers.length === 0) {
-      showSelectUserWarning()
-      return
-    }
-
-    const amount = parseInt(bulkCreditAmount)
-    if (isNaN(amount) || amount <= 0) {
-      toast.error('Invalid amount', toastStyle)
-      return
-    }
-
-    try {
-      for (const memberId of selectedUsers) {
-        await handleRemoveCredits(memberId, amount)
-      }
-      setBulkCreditAmount('')
-    } catch (error) {
-      console.error('Failed to remove bulk credits:', error)
-      toast.error('Failed to remove credits for some users', toastStyle)
-    }
+  const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id]);
+  if (selectedUsers.length === 0) {
+    showSelectUserWarning();
+    return;
   }
+
+  const amount = parseInt(bulkCreditAmount);
+  if (isNaN(amount) || amount <= 0) {
+    toast.error('Invalid amount', toastStyle);
+    return;
+  }
+
+  try {
+    // Process users one by one
+    for (let i = 0; i < selectedUsers.length; i++) {
+      const targetMemberId = selectedUsers[i];
+      
+      const response = await fetch('/api/credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'REMOVE_CREDITS',
+          memberId: targetMemberId,  // The one we're taking credits from
+          fromMemberId: memberId,    // The one getting credits back (current user)
+          teamId,
+          amount
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to remove credits');
+      }
+
+      // Add a small delay between requests to not overwhelm n8n
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    await Promise.all([
+      fetchUsers(),
+      fetchCurrentUserCredits()
+    ]);
+    
+    setBulkCreditAmount('');
+    toast.success('Credits removed successfully', toastStyle);
+  } catch (error) {
+    console.error('Failed to remove credits:', error);
+    toast.error('Failed to remove credits', toastStyle);
+  }
+};
 
   const handleRemoveUser = async (memberId: string) => {
     try {
