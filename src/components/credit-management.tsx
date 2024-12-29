@@ -470,32 +470,60 @@ const teamId = typeof window !== 'undefined' ?
   }
 
   const handleBulkAddCredits = async () => {
-    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id])
+    const selectedUsers = Object.keys(checkedUsers).filter(id => checkedUsers[id]);
     if (selectedUsers.length === 0) {
-      showSelectUserWarning()
-      return
+      showSelectUserWarning();
+      return;
     }
 
-    const amount = parseInt(bulkCreditAmount)
+    const amount = parseInt(bulkCreditAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount', toastStyle)
-      return
+      toast.error('Please enter a valid amount', toastStyle);
+      return;
     }
 
-    const totalAmount = amount * selectedUsers.length
+    const totalAmount = amount * selectedUsers.length;
     if (totalAmount > currentUserCredits) {
-      toast.error('You don\'t have enough credits for bulk operation', toastStyle)
-      return
+      toast.error('You don\'t have enough credits for bulk operation', toastStyle);
+      return;
     }
 
     try {
-      for (const toMemberId of selectedUsers) {
-        await handleAddCredits(toMemberId, amount)
+      // Process users one by one
+      for (let i = 0; i < selectedUsers.length; i++) {
+        const toMemberId = selectedUsers[i];
+        
+        const response = await fetch('/api/credits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'ADD_CREDITS',
+            fromMemberId: memberId,
+            toMemberId,
+            teamId,
+            amount
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to add credits');
+        }
+
+        // Add a small delay between requests to not overwhelm n8n
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      setBulkCreditAmount('')
+
+      await Promise.all([
+        fetchUsers(),
+        fetchCurrentUserCredits()
+      ]);
+      
+      setBulkCreditAmount('');
+      toast.success('Credits added successfully', toastStyle);
     } catch (error) {
-      console.error('Failed to add bulk credits:', error)
-      toast.error('Failed to add credits for some users', toastStyle)
+      console.error('Failed to add bulk credits:', error);
+      toast.error('Failed to add credits', toastStyle);
     }
   }
 
