@@ -840,22 +840,19 @@ const teamId = typeof window !== 'undefined' ?
               </td>
               <td className="py-4 px-4 text-center">-</td>
             </tr>
-            {users.map(user => 
-  // Skip rendering the current user's row but keep them in the data
-  user.member_id === memberId ? null : (
-    <UserRow
-      key={user.member_id}
-      user={user}
-      currentUserId={memberId}
-      onAddCredits={handleAddCredits}
-      onRemoveCredits={handleRemoveCredits}
-      checked={checkedUsers[user.member_id] || false}
-      onCheckedChange={(checked) => handleCheckUser(user.member_id, checked)}
-      onSaveAutomation={handleSaveAutomation}
-      onRemoveUser={handleRemoveUser}
-    />
-  )
-)}
+            {users.map(user => (
+              <UserRow
+                key={user.member_id}
+                user={user}
+                currentUserId={memberId}
+                onAddCredits={handleAddCredits}
+                onRemoveCredits={handleRemoveCredits}
+                checked={checkedUsers[user.member_id] || false}
+                onCheckedChange={(checked) => handleCheckUser(user.member_id, checked)}
+                onSaveAutomation={handleSaveAutomation}
+                onRemoveUser={handleRemoveUser}
+              />
+            ))}
           </tbody>
         </table>
       </div>
