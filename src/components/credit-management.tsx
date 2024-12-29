@@ -671,7 +671,7 @@ const teamId = typeof window !== 'undefined' ?
  const handleRemoveUser = async (memberId: string) => {
   try {
     // Send webhook notification first
-    const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook-test/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
+    const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
