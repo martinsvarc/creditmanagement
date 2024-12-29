@@ -235,15 +235,18 @@ export function CreditManagement() {
     }
   }, [teamId, memberId])
 
-  const fetchUsers = async () => {
+ const fetchUsers = async () => {
   try {
     console.log('Fetching users with teamId:', teamId);
-    // Make sure the URL matches exactly
     const response = await fetch(`/api/credits?teamId=${teamId}`);
     console.log('Response status:', response.status);
     const data = await response.json();
     console.log('Response data:', data);
-    // ... rest of the code
+    
+    if (data.users) {
+      setUsers(data.users);
+    }
+    setLoading(false);
   } catch (error) {
     console.error('Failed to fetch users:', error);
     setLoading(false);
@@ -253,12 +256,15 @@ export function CreditManagement() {
   const fetchCurrentUserCredits = async () => {
   try {
     console.log('Fetching user credits with:', { teamId, memberId });
-    // Make sure the URL matches exactly
     const response = await fetch(`/api/credits?teamId=${teamId}&memberId=${memberId}`);
     console.log('Response status:', response.status);
     const data = await response.json();
     console.log('Response data:', data);
-    // ... rest of the code
+    
+    if (data.credits !== undefined) {
+      setCurrentUserCredits(data.credits);
+    }
+    setLoading(false);
   } catch (error) {
     console.error('Failed to fetch user credits:', error);
     setLoading(false);
