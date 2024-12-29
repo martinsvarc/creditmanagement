@@ -67,6 +67,12 @@ export async function POST(request: Request) {
       case 'ADD_CREDITS':
         return handleAddCredits(data);
       case 'REMOVE_CREDITS':
+        return handleRemoveCredits(data, request);
+
+    switch (action) {
+      case 'ADD_CREDITS':
+        return handleAddCredits(data);
+      case 'REMOVE_CREDITS':
         return handleRemoveCredits(data);
       case 'ADD_DIRECT_CREDITS': 
         return handleAddDirectCredits(data);
@@ -203,7 +209,7 @@ async function handleAddDirectCredits(data: any) {
   }
 }
 
-async function handleRemoveCredits(data: any) {
+async function handleRemoveCredits(data: any, request: Request) {
   const { memberId, teamId, amount } = data;
 
   try {
