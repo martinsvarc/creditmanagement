@@ -204,7 +204,7 @@ async function handleAddDirectCredits(data: any) {
 }
 
 async function handleRemoveCredits(data: any) {
-  const { memberId, teamId, amount, fromMemberId } = data;  // add fromMemberId here
+  const { memberId, teamId, amount } = data;
 
   try {
     // Check if user has enough credits
@@ -217,15 +217,19 @@ async function handleRemoveCredits(data: any) {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 400 });
     }
 
-    // Send webhook notification first - if this fails, nothing else will happen
+    // Get the current user (receiver) from the URL
+    const url = new URL(request.url);
+    const currentUserId = url.searchParams.get('memberId');
+
+    // Send webhook notification first
     const webhookResponse = await fetch('https://aiemployee.app.n8n.cloud/webhook-test/ad038ab1-b1da-4822-ae6d-7f9bc8ad721a', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        giver: memberId,       // The one we're taking credits from
-        receiver: fromMemberId, // The one getting credits back
+        giver: memberId,
+        receiver: currentUserId,
         amount: amount
       })
     });
